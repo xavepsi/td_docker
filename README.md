@@ -48,7 +48,9 @@ Healthchecks pour vérifier chaque service
 ## Commandes utiles :
 
 docker compose ps
+
 docker compose logs -f
+
 docker compose down
 
 ## Résultat
@@ -61,4 +63,5 @@ Déploiement automatisé avec Docker Compose
 ## Conclusion
 
 Ce projet démontre la mise en place d’une application web conteneurisée fonctionnelle
+
 
