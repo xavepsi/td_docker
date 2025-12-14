@@ -1,136 +1,63 @@
-﻿# TD - Application conteneurisée générique
+# TD – Application conteneurisée
+
+## Présentation
+
+Ce projet consiste à déployer une application web simple à l’aide de Docker et Docker Compose.
+L’objectif est de montrer la mise en place d’une architecture conteneurisée complète avec un frontend, une API et une base de données.
 
 ## Architecture
 
-### Services
-- **API** (FastAPI Python): Expose deux routes `/status` et `/items` pour interroger la base de données
-- **Front** (Nginx): Serveur statique qui interroge l'API via JavaScript
-- **Database** (PostgreSQL): Stocke les items
+L’application est composée de trois services :
 
-### Interactions
-```
-Frontend (Nginx) -> API (FastAPI) -> PostgreSQL
-```
+Frontend (Nginx) : affiche l’interface web
+API (FastAPI – Python) : fournit les données
+Base de données (PostgreSQL) : stocke les informations
 
-## Fichiers importants
+Le frontend appelle l’API, qui communique avec la base de données.
 
-- `api/main.py`: Application FastAPI
-- `api/Dockerfile`: Build multi-étapes pour l'API
-- `api/requirements.txt`: Dépendances Python
-- `front/index.html`: Page HTML du front
-- `front/app.js`: JavaScript pour charger les items
-- `front/nginx.conf`: Configuration du reverse proxy
-- `front/Dockerfile`: Build multi-étapes pour le front
-- `db/init.sql`: Script d'initialisation de la base de données
-- `docker-compose.yml`: Orchestration des 3 services
-- `.env`: Variables d'environnement
-- `.dockerignore`: Fichiers à exclure du build Docker
+## Fonctionnement
 
-## Bonnes pratiques mises en œuvre
+L’API expose deux routes :
+/status : vérifie que l’API fonctionne
+/items : récupère les données depuis PostgreSQL
 
-### Build multi-étapes
-- **API**: Étape builder pour installer les deps, puis image finale minimaliste
-- **Front**: Étape builder Node, puis image finale Nginx
+Le frontend interroge l’API en JavaScript pour afficher les données
 
-### Sécurité
-- Conteneurs exécutés avec utilisateur non-root (`appuser`)
-- `security_opt: no-new-privileges:true` pour éviter les escalades de privilèges
-- `cap_drop: ALL` pour retirer toutes les capacités Linux inutiles
-- Images Alpine pour réduire la surface d'attaque
+La base de données est initialisée automatiquement au premier lancement
 
-### Externalisation des variables
-- Fichier `.env` pour les configurations (host, port, utilisateur, mot de passe)
-- Variables référencées dans `docker-compose.yml`
+## Docker et organisation
 
-### Healthchecks
-- DB: `pg_isready` pour vérifier que PostgreSQL est prêt
-- API: `curl /status` pour vérifier que l'API est accessible
-- Front: `curl /` pour vérifier que Nginx répond
-- Permet à Compose de savoir quand chaque service est prêt
+Un Dockerfile pour l’API
 
-### .dockerignore
-Exclut les fichiers inutiles du build:
-- `__pycache__/`, `*.pyc`: Fichiers Python compilés
-- `node_modules/`: Dépendances Node
-- `.git`: Historique Git
-- `.env`: Fichiers de configuration sensibles
+Un Dockerfile pour le frontend
 
-## Commandes clés
+Un fichier docker-compose.yml pour lancer tous les services
 
-### Construction et déploiement
-```bash
-bash scripts/build_and_deploy.sh
-```
+Les variables de configuration sont externalisées dans un fichier .env
 
-### Vérifier les services
-```bash
+Les données sont persistantes grâce à un volume Docker
+
+## Bonnes pratiques appliquées
+
+Builds Docker multi-étapes pour réduire la taille des images
+
+Conteneurs exécutés avec un utilisateur non-root
+
+Healthchecks pour vérifier chaque service
+
+## Commandes utiles :
+
 docker compose ps
 docker compose logs -f
-```
-
-### Arrêter la stack
-```bash
 docker compose down
-```
 
-### Arrêter et supprimer les volumes
-```bash
-docker compose down -v
-```
+## Résultat
 
-### Mesurer la taille des images
-```bash
-docker images td_api:latest --format "table {{.Repository}}\t{{.Size}}"
-docker images td_front:latest --format "table {{.Repository}}\t{{.Size}}"
-```
+Frontend accessible via le navigateur
+API fonctionnelle
+Connexion à la base de données opérationnell
+Déploiement automatisé avec Docker Compose
 
-## Taille des images
+## Conclusion
 
-Les builds multi-étapes permettent de réduire significativement la taille:
-
-### API
-- Étape builder: ~500MB (avec pip)
-- Image finale: ~150MB (sans pip, sans compilateur)
-- **Réduction: ~70%**
-
-### Front
-- Étape builder Node: ~400MB
-- Image finale Nginx: ~40MB
-- **Réduction: ~90%**
-
-## Difficultés et améliorations possibles
-
-### Difficultés rencontrées
-1. Configuration du reverse proxy Nginx: Nécessite `proxy_pass http://api:8000/` (pas `http://api:8000` seul)
-2. Initialisation de PostgreSQL: Les scripts dans `/docker-entrypoint-initdb.d/` ne s'exécutent que la première fois
-3. Attendre que les services soient prêts: Healthchecks + `depends_on: condition: service_healthy`
-
-### Améliorations possibles
-1. **CI/CD**: Ajouter un pipeline GitHub Actions pour builder et tester automatiquement
-2. **Scanning d'images**: Utiliser `docker scan` ou Trivy pour vérifier les vulnérabilités
-3. **Signature des images**: Docker Content Trust pour signer et vérifier les images
-4. **Logging centralisé**: ELK Stack ou Prometheus + Grafana
-5. **Scaling**: Ajouter un load balancer (Nginx, HAProxy) pour plusieurs instances
-6. **Secrets**: Utiliser Docker Secrets ou HashiCorp Vault au lieu du `.env`
-
-## Évaluation
-
-### Critères validés
--  Routes `/status` et `/items` fonctionnelles
--  Accès base de données opérationnel
--  Configuration `.env` et variables externalisées
--  Dockerfiles multi-étapes pour API et front
--  Utilisateur non-root dans les conteneurs
--  Initialisation automatique de la base
--  Persistance des données (volume)
--  Frontend fonctionnel interrogeant l'API
--  docker-compose.yml complet
--  Healthchecks configurés
--  Gestion des variables via Compose
--  Sécurité (non-root, no-new-privileges, cap_drop)
--  Script d'automatisation
-
-### Points perfectibles
-- Signature des images (Docker Content Trust)
-- Scan automatique des vulnérabilités
-- Tests unitaires dans le script CI
+Ce projet démontre la mise en place d’une application web conteneurisée fonctionnelle
